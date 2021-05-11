@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 def unmap(data, count, inds, fill=0):
-    """Unmap a subset of item (data) back to the original set of items (of
-    size count)"""
+    """Unmap a subset of item back to the original set of items"""
     if count == len(inds):
         return data
 
+    # returns the unmapped data based on the shape of data (1d or 2d)
     if len(data.shape) == 1:
         ret = np.empty((count, ), dtype=data.dtype)
         ret.fill(fill)

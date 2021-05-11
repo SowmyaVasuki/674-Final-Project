@@ -52,8 +52,6 @@ class BatchSampler:
     def sample(self, num):
         indices = self._sample(num)
         return [self._sampled_list[i] for i in indices]
-        # return np.random.choice(self._sampled_list, num)
-
 
 class DataBasePreprocessing:
     def __call__(self, db_infos):
@@ -67,7 +65,6 @@ class DataBasePreprocessing:
 class DBFilterByDifficulty(DataBasePreprocessing):
     def __init__(self, removed_difficulties):
         self._removed_difficulties = removed_difficulties
-        print(removed_difficulties)
 
     def _preprocess(self, db_infos):
         new_db_infos = {}
@@ -82,7 +79,6 @@ class DBFilterByDifficulty(DataBasePreprocessing):
 class DBFilterByMinNumPoint(DataBasePreprocessing):
     def __init__(self, min_gt_point_dict):
         self._min_gt_point_dict = min_gt_point_dict
-        print(min_gt_point_dict)
 
     def _preprocess(self, db_infos):
         for name, min_num in self._min_gt_point_dict.items():
@@ -253,7 +249,6 @@ def noise_per_box(boxes, valid_mask, loc_noises, rot_noises):
     current_corners = np.zeros((4, 2), dtype=boxes.dtype)
     rot_mat_T = np.zeros((2, 2), dtype=boxes.dtype)
     success_mask = -np.ones((num_boxes, ), dtype=np.int64)
-    # print(valid_mask)
     for i in range(num_boxes):
         if valid_mask[i]:
             for j in range(num_tests):
@@ -265,7 +260,6 @@ def noise_per_box(boxes, valid_mask, loc_noises, rot_noises):
                 coll_mat = box_collision_test(
                     current_corners.reshape(1, 4, 2), box_corners)
                 coll_mat[0, i] = False
-                # print(coll_mat)
                 if not coll_mat.any():
                     success_mask[i] = j
                     box_corners[i] = current_corners
@@ -288,7 +282,6 @@ def noise_per_box_group(boxes, valid_mask, loc_noises, rot_noises, group_nums):
     current_corners = np.zeros((max_group_num, 4, 2), dtype=boxes.dtype)
     rot_mat_T = np.zeros((2, 2), dtype=boxes.dtype)
     success_mask = -np.ones((num_boxes, ), dtype=np.int64)
-    # print(valid_mask)
     idx = 0
     for num in group_nums:
         if valid_mask[idx]:
@@ -341,7 +334,7 @@ def noise_per_box_group_v2_(boxes, valid_mask, loc_noises, rot_noises,
     corners_norm -= np.array([0.5, 0.5], dtype=boxes.dtype)
     corners_norm = corners_norm.reshape(4, 2)
 
-    # print(valid_mask)
+
     idx = 0
     for num in group_nums:
         if valid_mask[idx]:
@@ -903,5 +896,4 @@ if __name__ == "__main__":
     bboxes = np.array([[0.0, 0.0, 0.5, 0.5], [0.2, 0.2, 0.6, 0.6],
                        [0.7, 0.7, 0.9, 0.9], [0.55, 0.55, 0.8, 0.8]])
     bbox_corners = box_np_ops.minmax_to_corner_2d(bboxes)
-    print(bbox_corners.shape)
-    print(box_collision_test(bbox_corners, bbox_corners))
+    

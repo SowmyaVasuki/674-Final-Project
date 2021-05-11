@@ -11,43 +11,38 @@ from skimage import io
 
 def area(boxes, add1=False):
     """Computes area of boxes.
-
-    Args:
-        boxes: Numpy array with shape [N, 4] holding N boxes
-
-    Returns:
-        a numpy array with shape [N*1] representing box areas
+    Args: boxes: Numpy array [N, 4] to hold N boxes
+    Returns: a numpy array with shape [N*1] representing box areas
     """
+        box1 = boxes[:, 2] - boxes[:, 0]
+        box2 = boxes[:, 3] - boxes[:, 1]
     if add1:
-        return (boxes[:, 2] - boxes[:, 0] + 1.0) * (
-            boxes[:, 3] - boxes[:, 1] + 1.0)
+        return (box1 + 1.0) * (box2 + 1.0)
     else:
-        return (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+        return box1 * box2
 
 
 def intersection(boxes1, boxes2, add1=False):
     """Compute pairwise intersection areas between boxes.
-
     Args:
         boxes1: a numpy array with shape [N, 4] holding N boxes
         boxes2: a numpy array with shape [M, 4] holding M boxes
-
     Returns:
         a numpy array with shape [N*M] representing pairwise intersection area
     """
     [y_min1, x_min1, y_max1, x_max1] = np.split(boxes1, 4, axis=1)
     [y_min2, x_min2, y_max2, x_max2] = np.split(boxes2, 4, axis=1)
 
-    all_pairs_min_ymax = np.minimum(y_max1, np.transpose(y_max2))
-    all_pairs_max_ymin = np.maximum(y_min1, np.transpose(y_min2))
+    all_pairs_min_ymax = np.minimum(y_max1, y_max2.T)
+    all_pairs_max_ymin = np.maximum(y_min1, y_min2.T)
     if add1:
         all_pairs_min_ymax += 1.0
     intersect_heights = np.maximum(
         np.zeros(all_pairs_max_ymin.shape),
         all_pairs_min_ymax - all_pairs_max_ymin)
 
-    all_pairs_min_xmax = np.minimum(x_max1, np.transpose(x_max2))
-    all_pairs_max_xmin = np.maximum(x_min1, np.transpose(x_min2))
+    all_pairs_min_xmax = np.minimum(x_max1, x_max2.T)
+    all_pairs_max_xmin = np.maximum(x_min1, x_min2.T)
     if add1:
         all_pairs_min_xmax += 1.0
     intersect_widths = np.maximum(
@@ -58,20 +53,16 @@ def intersection(boxes1, boxes2, add1=False):
 
 def iou(boxes1, boxes2, add1=False):
     """Computes pairwise intersection-over-union between box collections.
-
     Args:
-        boxes1: a numpy array with shape [N, 4] holding N boxes.
+        boxes1: an numpy array with shape [N, 4] holding N boxes.
         boxes2: a numpy array with shape [M, 4] holding N boxes.
-
     Returns:
         a numpy array with shape [N, M] representing pairwise iou scores.
     """
     intersect = intersection(boxes1, boxes2, add1)
-    area1 = area(boxes1, add1)
-    area2 = area(boxes2, add1)
     union = np.expand_dims(
-        area1, axis=1) + np.expand_dims(
-            area2, axis=0) - intersect
+        area(boxes1, add1), axis=1) + np.expand_dims(
+            area(boxes2, add1), axis=0) - intersect
     return intersect / union
 
 
@@ -99,7 +90,6 @@ def get_kitti_info_path(idx,
         return str(file_path)
     else:
         return str(prefix / file_path)
-
 
 def get_image_path(idx, prefix, training=True, relative_path=True, exist_check=True):
     return get_kitti_info_path(idx, prefix, 'image_2', '.png', training,
@@ -224,18 +214,10 @@ def get_kitti_image_info(path,
                 idx, path, training, relative_path=False)
             with open(calib_path, 'r') as f:
                 lines = f.readlines()
-            P0 = np.array(
-                [float(info) for info in lines[0].split(' ')[1:13]]).reshape(
-                    [3, 4])
-            P1 = np.array(
-                [float(info) for info in lines[1].split(' ')[1:13]]).reshape(
-                    [3, 4])
-            P2 = np.array(
-                [float(info) for info in lines[2].split(' ')[1:13]]).reshape(
-                    [3, 4])
-            P3 = np.array(
-                [float(info) for info in lines[3].split(' ')[1:13]]).reshape(
-                    [3, 4])
+            P0 = np.array([float(info) for info in lines[0].split(' ')[1:13]]).reshape([3, 4])
+            P1 = np.array([float(info) for info in lines[1].split(' ')[1:13]]).reshape([3, 4])
+            P2 = np.array([float(info) for info in lines[2].split(' ')[1:13]]).reshape([3, 4])
+            P3 = np.array([float(info) for info in lines[3].split(' ')[1:13]]).reshape([3, 4])
             if extend_matrix:
                 P0 = _extend_matrix(P0)
                 P1 = _extend_matrix(P1)
@@ -339,14 +321,14 @@ def remove_dontcare(image_anno):
     return img_filtered_annotations
 
 def remove_low_height(image_anno, thresh):
-    img_filtered_annotations = {}
+    img_filtered_annos = {}
     relevant_annotation_indices = [
         i for i, s in enumerate(image_anno['bbox']) if (s[3] - s[1]) >= thresh
     ]
     for key in image_anno.keys():
-        img_filtered_annotations[key] = (
+        img_filtered_annos[key] = (
             image_anno[key][relevant_annotation_indices])
-    return img_filtered_annotations
+    return img_filtered_annos
 
 def remove_low_score(image_anno, thresh):
     img_filtered_annotations = {}

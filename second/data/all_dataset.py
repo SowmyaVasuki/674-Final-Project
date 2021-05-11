@@ -130,10 +130,8 @@ def create_groundtruth_database_parallel(dataset_class_name,
         sensor_data = dataset.get_sensor_data(j)
         if "image_idx" in sensor_data["metadata"]:
             image_idx = sensor_data["metadata"]["image_idx"]
-        points = sensor_data["lidar"]["points"]
-        annos = sensor_data["lidar"]["annotations"]
-        gt_boxes = annos["boxes"]
-        names = annos["names"]
+        points, annos = sensor_data["lidar"]["points"], sensor_data["lidar"]["annotations"]
+        gt_boxes, names = annos["boxes"], annos["names"]
         group_dict = {}
         group_ids = np.full([gt_boxes.shape[0]], -1, dtype=np.int64)
         if "group_ids" in annos:
@@ -166,12 +164,9 @@ def create_groundtruth_database_parallel(dataset_class_name,
                     "gt_idx": i,
                     "box3d_lidar": gt_boxes[i],
                     "num_points_in_gt": gt_points.shape[0],
-                    "difficulty": difficulty[i],
-                    # "group_id": -1,
-                    # "bbox": bboxes[i],
+                    "difficulty": difficulty[i]
                 }
                 local_group_id = group_ids[i]
-                # if local_group_id >= 0:
                 if local_group_id not in group_dict:
                     group_dict[local_group_id] = group_counter
                     group_counter += 1

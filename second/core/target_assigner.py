@@ -7,25 +7,21 @@ from second.utils.timer import simple_timer
 
 
 class TargetAssigner:
-    def __init__(self,
-                 box_coder,
-                 anchor_generators,
-                 classes,
-                 feature_map_sizes,
-                 positive_fraction=None,
-                 region_similarity_calculators=None,
-                 sample_size=512,
+    def __init__(self, box_coder,
+                 anchor_generators, classes,
+                 feature_map_sizes, positive_fraction=None,
+                 region_similarity_calculators=None, sample_size=512,
                  assign_per_class=True):
-        self._box_coder = box_coder
         self._anchor_generators = anchor_generators
+        self._box_coder = box_coder
         self._sim_calcs = region_similarity_calculators
-        box_ndims = [a.ndim for a in anchor_generators]
         assert all([e == box_ndims[0] for e in box_ndims])
+        box_ndims = [a.ndim for a in anchor_generators]
         self._positive_fraction = positive_fraction
-        self._sample_size = sample_size
         self._classes = classes
+        self._feature_map_sizes = feature_map_sizes 
         self._assign_per_class = assign_per_class
-        self._feature_map_sizes = feature_map_sizes
+        self._sample_size = sample_size
 
     @property
     def box_coder(self):
@@ -65,6 +61,7 @@ class TargetAssigner:
         else:
             prune_anchor_fn = None
 
+        #similarity function
         def similarity_fn(anchors, gt_boxes):
             anchors_rbv = anchors[:, [0, 1, 3, 4, 6]]
             gt_boxes_rbv = gt_boxes[:, [0, 1, 3, 4, 6]]
@@ -117,9 +114,8 @@ class TargetAssigner:
             feature_map_size = anchor_dict["anchors"].shape[:3]
             num_loc = anchor_dict["anchors"].shape[-2]
             if anchors_mask is not None:
-                anchors_mask = anchors_mask.reshape(-1)
-                a_range = self.anchors_range(class_name)
-                anchors_mask_class = anchors_mask[a_range[0]:a_range[1]].reshape(-1)
+                a_range = anchors_mask.reshape(-1)[self.anchors_range(class_name)[0]:self.anchors_range(class_name)[1]].reshape(-1)
+                anchors_mask_class = a_range.reshape(-1)
                 prune_anchor_fn = lambda _: np.where(anchors_mask_class)[0]
             else:
                 prune_anchor_fn = None

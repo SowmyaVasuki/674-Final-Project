@@ -63,8 +63,8 @@ def _create_learning_rate_scheduler(learning_rate_config, optimizer, total_step)
     ValueError: when using an unsupported input data type.
   """
   lr_scheduler = None
-  learning_rate_type = learning_rate_config.WhichOneof('learning_rate')
-  if learning_rate_type == 'multi_phase':
+  learn_rate_type = learning_rate_config.WhichOneof('learning_rate')
+  if learn_rate_type == 'multi_phase':
     config = learning_rate_config.multi_phase
     lr_phases = []
     mom_phases = []
@@ -74,20 +74,21 @@ def _create_learning_rate_scheduler(learning_rate_config, optimizer, total_step)
     lr_scheduler = lsf.LRSchedulerStep(
       optimizer,total_step, lr_phases, mom_phases)
 
-  if learning_rate_type == 'one_cycle':
+  learning_rates = ['one_cycle', 'exponential_decay', 'manual_stepping']
+  if learn_rate_type == learning_rates[0]:
     config = learning_rate_config.one_cycle
     lr_scheduler = lsf.OneCycle(
       optimizer, total_step, config.lr_max, list(config.moms), config.div_factor, config.pct_start)
-  if learning_rate_type == 'exponential_decay':
+  if learn_rate_type == learning_rates[1]:
     config = learning_rate_config.exponential_decay
     lr_scheduler = lsf.ExponentialDecay(
       optimizer, total_step, config.initial_learning_rate, config.decay_length, config.decay_factor, config.staircase)
-  if learning_rate_type == 'manual_stepping':
+  if learn_rate_type == learning_rates[2]:
     config = learning_rate_config.manual_stepping
     lr_scheduler = lsf.ManualStepping(
       optimizer, total_step, list(config.boundaries), list(config.rates))
 
   if lr_scheduler is None:
-    raise ValueError('Learning_rate %s not supported.' % learning_rate_type)
+    raise ValueError('Learning_rate %s not supported.' % learn_rate_type)
 
   return lr_scheduler

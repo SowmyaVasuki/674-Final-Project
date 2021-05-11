@@ -28,8 +28,7 @@ class RegionSimilarityCalculator(object):
   __metaclass__ = ABCMeta
 
   def compare(self, boxes1, boxes2):
-    """Computes matrix of pairwise similarity between BoxLists.
-
+    """Computes matrix of pairwise similarity between BoxLists. 
     This op (to be overriden) computes a measure of pairwise similarity between
     the boxes in the given BoxLists. Higher values indicate more similarity.
 

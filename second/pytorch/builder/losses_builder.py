@@ -20,14 +20,14 @@ from second.pytorch.core.ghm_loss import GHMCLoss, GHMRLoss
 from second.protos import losses_pb2
 
 
-def build(loss_config):
+def build(config_loss):
   """Build losses based on the config.
 
   Builds classification, localization losses and optionally a hard example miner
   based on the config.
 
   Args:
-    loss_config: A losses_pb2.Loss object.
+    config_loss: A losses_pb2.Loss object.
 
   Returns:
     classification_loss: Classification loss object.
@@ -40,68 +40,62 @@ def build(loss_config):
     ValueError: If hard_example_miner is used with sigmoid_focal_loss.
   """
   classification_loss = _build_classification_loss(
-      loss_config.classification_loss)
+      config_loss.classification_loss)
   localization_loss = _build_localization_loss(
-      loss_config.localization_loss)
-  classification_weight = loss_config.classification_weight
-  localization_weight = loss_config.localization_weight
+      config_loss.localization_loss)
+  classification_weight = config_loss.classification_weight
+  localization_weight = config_loss.localization_weight
   hard_example_miner = None
-  if loss_config.HasField('hard_example_miner'):
-    raise ValueError('Pytorch don\'t support HardExampleMiner')
+  if config_loss.HasField('hard_example_miner'):
+    raise ValueError('Pytorch doesnt\'t support HardExampleMiner')
   return (classification_loss, localization_loss,
           classification_weight,
           localization_weight, hard_example_miner)
 
-def build_faster_rcnn_classification_loss(loss_config):
+def build_faster_rcnn_classification_loss(config_loss):
   """Builds a classification loss for Faster RCNN based on the loss config.
 
   Args:
-    loss_config: A losses_pb2.ClassificationLoss object.
+    config_loss: A losses_pb2.ClassificationLoss object.
 
   Returns:
     Loss based on the config.
 
   Raises:
-    ValueError: On invalid loss_config.
+    ValueError: On invalid config_loss.
   """
-  if not isinstance(loss_config, losses_pb2.ClassificationLoss):
-    raise ValueError('loss_config not of type losses_pb2.ClassificationLoss.')
+  if not isinstance(config_loss, losses_pb2.ClassificationLoss):
+    raise ValueError('config_loss not of type losses_pb2.ClassificationLoss.')
 
-  loss_type = loss_config.WhichOneof('classification_loss')
+  loss_type = config_loss.WhichOneof('classification_loss')
 
   if loss_type == 'weighted_sigmoid':
     return losses.WeightedSigmoidClassificationLoss()
   if loss_type == 'weighted_softmax':
-    config = loss_config.weighted_softmax
+    config = config_loss.weighted_softmax
     return losses.WeightedSoftmaxClassificationLoss(
         logit_scale=config.logit_scale)
 
   # By default, Faster RCNN second stage classifier uses Softmax loss
   # with anchor-wise outputs.
-  config = loss_config.weighted_softmax
+  config = config_loss.weighted_softmax
   return losses.WeightedSoftmaxClassificationLoss(
       logit_scale=config.logit_scale)
 
 
-def _build_localization_loss(loss_config):
+def _build_localization_loss(config_loss):
   """Builds a localization loss based on the loss config.
-
-  Args:
-    loss_config: A losses_pb2.LocalizationLoss object.
-
-  Returns:
-    Loss based on the config.
-
   Raises:
-    ValueError: On invalid loss_config.
+    ValueError: On invalid config_loss.
   """
-  if not isinstance(loss_config, losses_pb2.LocalizationLoss):
-    raise ValueError('loss_config not of type losses_pb2.LocalizationLoss.')
+  
+  if not isinstance(config_loss, losses_pb2.LocalizationLoss):
+    raise ValueError('config_loss not of type losses_pb2.LocalizationLoss.')
 
-  loss_type = loss_config.WhichOneof('localization_loss')
+  loss_type = config_loss.WhichOneof('localization_loss')
   
   if loss_type == 'weighted_l2':
-    config = loss_config.weighted_l2
+    config = config_loss.weighted_l2
     if len(config.code_weight) == 0:
       code_weight = None
     else:
@@ -109,14 +103,14 @@ def _build_localization_loss(loss_config):
     return losses.WeightedL2LocalizationLoss(code_weight)
 
   if loss_type == 'weighted_smooth_l1':
-    config = loss_config.weighted_smooth_l1
+    config = config_loss.weighted_smooth_l1
     if len(config.code_weight) == 0:
       code_weight = None
     else:
       code_weight = config.code_weight
     return losses.WeightedSmoothL1LocalizationLoss(config.sigma, code_weight)
   if loss_type == 'weighted_ghm':
-    config = loss_config.weighted_ghm
+    config = config_loss.weighted_ghm
     if len(config.code_weight) == 0:
       code_weight = None
     else:
@@ -126,28 +120,28 @@ def _build_localization_loss(loss_config):
   raise ValueError('Empty loss config.')
 
 
-def _build_classification_loss(loss_config):
+def _build_classification_loss(config_loss):
   """Builds a classification loss based on the loss config.
 
   Args:
-    loss_config: A losses_pb2.ClassificationLoss object.
+    config_loss: A losses_pb2.ClassificationLoss object.
 
   Returns:
     Loss based on the config.
 
   Raises:
-    ValueError: On invalid loss_config.
+    ValueError: On invalid config_loss.
   """
-  if not isinstance(loss_config, losses_pb2.ClassificationLoss):
-    raise ValueError('loss_config not of type losses_pb2.ClassificationLoss.')
+  if not isinstance(config_loss, losses_pb2.ClassificationLoss):
+    raise ValueError('config_loss not of type losses_pb2.ClassificationLoss.')
 
-  loss_type = loss_config.WhichOneof('classification_loss')
+  loss_type = config_loss.WhichOneof('classification_loss')
 
   if loss_type == 'weighted_sigmoid':
     return losses.WeightedSigmoidClassificationLoss()
 
   if loss_type == 'weighted_sigmoid_focal':
-    config = loss_config.weighted_sigmoid_focal
+    config = config_loss.weighted_sigmoid_focal
     # alpha = None
     # if config.HasField('alpha'):
     #   alpha = config.alpha
@@ -159,7 +153,7 @@ def _build_classification_loss(loss_config):
         gamma=config.gamma,
         alpha=alpha)
   if loss_type == 'weighted_softmax_focal':
-    config = loss_config.weighted_softmax_focal
+    config = config_loss.weighted_softmax_focal
     # alpha = None
     # if config.HasField('alpha'):
     #   alpha = config.alpha
@@ -171,18 +165,18 @@ def _build_classification_loss(loss_config):
         gamma=config.gamma,
         alpha=alpha)
   if loss_type == 'weighted_ghm':
-    config = loss_config.weighted_ghm
+    config = config_loss.weighted_ghm
     return GHMCLoss(
         bins=config.bins,
         momentum=config.momentum)
 
   if loss_type == 'weighted_softmax':
-    config = loss_config.weighted_softmax
+    config = config_loss.weighted_softmax
     return losses.WeightedSoftmaxClassificationLoss(
         logit_scale=config.logit_scale)
 
   if loss_type == 'bootstrapped_sigmoid':
-    config = loss_config.bootstrapped_sigmoid
+    config = config_loss.bootstrapped_sigmoid
     return losses.BootstrappedSigmoidClassificationLoss(
         alpha=config.alpha,
         bootstrap_type=('hard' if config.hard_bootstrap else 'soft'))
