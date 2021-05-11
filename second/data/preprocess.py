@@ -1,12 +1,12 @@
+import cv2
+import numpy as np
+from skimage import io as imgio
+
 import pathlib
 import pickle
 import time
 from collections import defaultdict
 from functools import partial
-
-import cv2
-import numpy as np
-from skimage import io as imgio
 
 from second.core import box_np_ops
 from second.core import preprocess as prep
@@ -21,8 +21,9 @@ import matplotlib.pyplot as plt
 def merge_second_batch(batch_list):
     example_merged = defaultdict(list)
     for example in batch_list:
-        for k, v in example.items():
-            example_merged[k].append(v)
+        for k, value in example.items():
+            example_merged[k].append(value)
+
     ret = {}
     for key, elems in example_merged.items():
         if key in [
@@ -89,11 +90,9 @@ def merge_second_batch_multigpu(batch_list):
 
 
 def _dict_select(dict_, inds):
-    for k, v in dict_.items():
-        if isinstance(v, dict):
-            _dict_select(v, inds)
-        else:
-            dict_[k] = v[inds]
+    for key, value in dict_.items():
+        if isinstance(value, dict): _dict_select(value, inds)
+        else: dict_[key] = value[inds]
 
 
 def prep_pointcloud(input_dict,
@@ -375,35 +374,11 @@ def prep_pointcloud(input_dict,
             unmatched_thresholds=unmatched_thresholds,
             importance=gt_dict["gt_importance"])
         
-        """
-        boxes_lidar = gt_dict["gt_boxes"]
-        bev_map = simplevis.nuscene_vis(points, boxes_lidar, gt_dict["gt_names"])
-        assigned_anchors = anchors[targets_dict['labels'] > 0]
-        ignored_anchors = anchors[targets_dict['labels'] == -1]
-        bev_map = simplevis.draw_box_in_bev(bev_map, [-50, -50, 3, 50, 50, 1], ignored_anchors, [128, 128, 128], 2)
-        bev_map = simplevis.draw_box_in_bev(bev_map, [-50, -50, 3, 50, 50, 1], assigned_anchors, [255, 0, 0])
-        cv2.imshow('anchors', bev_map)
-        cv2.waitKey(0)
-        
-        boxes_lidar = gt_dict["gt_boxes"]
-        pp_map = np.zeros(grid_size[:2], dtype=np.float32)
-        voxels_max = np.max(voxels[:, :, 2], axis=1, keepdims=False)
-        voxels_min = np.min(voxels[:, :, 2], axis=1, keepdims=False)
-        voxels_height = voxels_max - voxels_min
-        voxels_height = np.minimum(voxels_height, 4)
-        # sns.distplot(voxels_height)
-        # plt.show()
-        pp_map[coordinates[:, 1], coordinates[:, 2]] = voxels_height / 4
-        pp_map = (pp_map * 255).astype(np.uint8)
-        pp_map = cv2.cvtColor(pp_map, cv2.COLOR_GRAY2RGB)
-        pp_map = simplevis.draw_box_in_bev(pp_map, [-50, -50, 3, 50, 50, 1], boxes_lidar, [128, 0, 128], 1)
-        cv2.imshow('heights', pp_map)
-        cv2.waitKey(0)
-        """
         example.update({
             'labels': targets_dict['labels'],
             'reg_targets': targets_dict['bbox_targets'],
             # 'reg_weights': targets_dict['bbox_outside_weights'],
             'importance': targets_dict['importance'],
         })
+        
     return example

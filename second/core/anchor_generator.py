@@ -10,7 +10,7 @@ class AnchorGenerator:
     def num_anchors_per_localization(self):
         raise NotImplementedError
 
-    def generate(self, feature_map_size):
+    def generate(self, feature_map):
         raise NotImplementedError
 
     @property 
@@ -50,9 +50,9 @@ class AnchorGeneratorStride(AnchorGenerator):
         num_size = np.array(self._sizes).reshape([-1, 3]).shape[0]
         return num_rot * num_size
 
-    def generate(self, feature_map_size):
+    def generate(self, feature_map):
         res = box_np_ops.create_anchors_3d_stride(
-            feature_map_size, self._sizes, self._anchor_strides,
+            feature_map, self._sizes, self._anchor_strides,
             self._anchor_offsets, self._rotations, self._dtype)
         if len(self._custom_values) > 0:
             custom_ndim = len(self._custom_values)
@@ -99,14 +99,11 @@ class AnchorGeneratorRange(AnchorGenerator):
         num_size = np.array(self._sizes).reshape([-1, 3]).shape[0]
         return num_rot * num_size
 
-    def generate(self, feature_map_size):
-        res = box_np_ops.create_anchors_3d_range(
-            feature_map_size, self._anchor_ranges, self._sizes,
-            self._rotations, self._dtype)
+    def generate(self, feature_map):
+        res = box_np_ops.create_anchors_3d_range(feature_map, self._anchor_ranges, self._sizes, self._rotations, self._dtype)
 
         if len(self._custom_values) > 0:
-            custom_ndim = len(self._custom_values)
-            custom = np.zeros([*res.shape[:-1], custom_ndim])
+            custom_ndim, custom = len(self._custom_values), np.zeros([*res.shape[:-1], custom_ndim])
             custom[:] = self._custom_values
             res = np.concatenate([res, custom], axis=-1)
         return res
