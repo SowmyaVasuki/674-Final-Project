@@ -1,9 +1,9 @@
-from second.pytorch.train import train, evaluate
-from google.protobuf import text_format
-from second.protos import pipeline_pb2
-from pathlib import Path
-from second.utils import config_tool, model_tool
 import datetime
+from pathlib import Path
+from google.protobuf import text_format
+from second.pytorch.train import train, evaluate
+from second.protos import pipeline_pb2
+from second.utils import config_tool, model_tool
 from second.data.all_dataset import get_dataset_class
 
 def _div_up(a, b):
