@@ -17,7 +17,11 @@ def area(boxes, add1=False):
         box1 = boxes[:, 2] - boxes[:, 0]
         box2 = boxes[:, 3] - boxes[:, 1]
     if add1:
+<<<<<<< Updated upstream
         return (box1 + 1.0) * (box2 + 1.0)
+=======
+        return (boxes[:, 2] - boxes[:, 0] + 1.0) * (boxes[:, 3] - boxes[:, 1] + 1.0)
+>>>>>>> Stashed changes
     else:
         return box1 * box2
 
