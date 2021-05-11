@@ -1,9 +1,8 @@
 from pathlib import Path
 import pickle
 import time
-from functools import partial
-
 import numpy as np
+from functools import partial
 
 from second.core import box_np_ops
 from second.core import preprocess as prep
@@ -28,48 +27,45 @@ class KittiDataset(Dataset):
         self._root_path = Path(root_path)
         self._kitti_infos = infos
 
-        print("remain number of infos:", len(self._kitti_infos))
+        print("Remaining number of infos:", len(self._kitti_infos))
         self._class_names = class_names
         self._prep_func = prep_func
 
     def __len__(self):
-        return len(self._kitti_infos)
+        kitti_infos_len = len(self._kitti_infos)
+        return kitti_infos_len
 
     def convert_detection_to_kitti_annos(self, detection):
-        class_names = self._class_names
-        det_image_idxes = [det["metadata"]["image_idx"] for det in detection]
-        gt_image_idxes = [
-            info["image"]["image_idx"] for info in self._kitti_infos
-        ]
         annos = []
+        class_names = self._class_names
+        det_image_idxes = [detect["metadata"]["image_idx"] for detect in detection]
+        gt_image_idxes = [info_kit["image"]["image_idx"] for info_kit in self._kitti_infos]
+    
         for i in range(len(detection)):
-            det_idx = det_image_idxes[i]
-            det = detection[i]
-            # info = self._kitti_infos[gt_image_idxes.index(det_idx)]
+            det_idx, det = det_image_idxes[i], detection[i]
             info = self._kitti_infos[i]
             calib = info["calib"]
-            rect = calib["R0_rect"]
-            Trv2c = calib["Tr_velo_to_cam"]
-            P2 = calib["P2"]
+            rect, Trv2c, P2 = calib["R0_rect"], calib["Tr_velo_to_cam"], calib["P2"]
+
             final_box_preds = det["box3d_lidar"].detach().cpu().numpy()
             label_preds = det["label_preds"].detach().cpu().numpy()
             scores = det["scores"].detach().cpu().numpy()
+
             if final_box_preds.shape[0] != 0:
                 final_box_preds[:, 2] -= final_box_preds[:, 5] / 2
-                box3d_camera = box_np_ops.box_lidar_to_camera(
-                    final_box_preds, rect, Trv2c)
-                locs = box3d_camera[:, :3]
-                dims = box3d_camera[:, 3:6]
-                angles = box3d_camera[:, 6]
+                box3d_camera = box_np_ops.box_lidar_to_camera(final_box_preds, rect, Trv2c)
+
+                locs = box3d_camera[:, :3] #Locations
+                dims = box3d_camera[:, 3:6] #Dimensions
+                angles = box3d_camera[:, 6] #Angles
+
                 camera_box_origin = [0.5, 1.0, 0.5]
-                box_corners = box_np_ops.center_to_corner_box3d(
-                    locs, dims, angles, camera_box_origin, axis=1)
-                box_corners_in_image = box_np_ops.project_to_image(
-                    box_corners, P2)
-                # box_corners_in_image: [N, 8, 2]
-                minxy = np.min(box_corners_in_image, axis=1)
-                maxxy = np.max(box_corners_in_image, axis=1)
+                box_corners = box_np_ops.center_to_corner_box3d(locs, dims, angles, camera_box_origin, axis=1)
+                box_corners_in_image = box_np_ops.project_to_image(box_corners, P2)
+                minxy = np.min(box_corners_in_image, axis=1) # Min xy coordinate
+                maxxy = np.max(box_corners_in_image, axis=1) # Max xy coordinate
                 bbox = np.concatenate([minxy, maxxy], axis=1)
+
             anno = kitti.get_start_result_anno()
             num_example = 0
             box3d_lidar = final_box_preds
@@ -82,8 +78,6 @@ class KittiDataset(Dataset):
                 bbox[j, 2:] = np.minimum(bbox[j, 2:], image_shape[::-1])
                 bbox[j, :2] = np.maximum(bbox[j, :2], [0, 0])
                 anno["bbox"].append(bbox[j])
-                # convert center format to kitti format
-                # box3d_lidar[j, 2] -= box3d_lidar[j, 5] / 2
                 anno["alpha"].append(
                     -np.arctan2(-box3d_lidar[j, 1], box3d_lidar[j, 0]) +
                     box3d_camera[j, 6])
@@ -95,8 +89,8 @@ class KittiDataset(Dataset):
                 anno["truncated"].append(0.0)
                 anno["occluded"].append(0)
                 anno["score"].append(scores[j])
-
                 num_example += 1
+
             if num_example != 0:
                 anno = {n: np.stack(v) for n, v in anno.items()}
                 annos.append(anno)
@@ -108,24 +102,21 @@ class KittiDataset(Dataset):
 
     def evaluation(self, detections, output_dir):
         """
-        detection
-        When you want to eval your own dataset, you MUST set correct
-        the z axis and box z center.
-        If you want to eval by my KITTI eval function, you must 
-        provide the correct format annotations.
+        Detection:
+        To eval your own dataset, set correct z axis and box z center.
+        To eval by my KITTI eval function, provide the correct format annotations.
+
         ground_truth_annotations format:
         {
-            bbox: [N, 4], if you fill fake data, MUST HAVE >25 HEIGHT!!!!!!
-            alpha: [N], you can use -10 to ignore it.
-            occluded: [N], you can use zero.
-            truncated: [N], you can use zero.
+            bbox: [N, 4], if you fill fake data, MUST HAVE >25 HEIGHT.
+            alpha: [N], Can set -10.
+            occluded: [N], Can set zero.
+            truncated: [N], Can set zero.
             name: [N]
             location: [N, 3] center of 3d box.
-            dimensions: [N, 3] dim of 3d box.
+            dimensions: [N, 3] dimension of 3d box.
             rotation_y: [N] angle.
         }
-        all fields must be filled, but some fields can fill
-        zero.
         """
         if "annos" not in self._kitti_infos[0]:
             return None
