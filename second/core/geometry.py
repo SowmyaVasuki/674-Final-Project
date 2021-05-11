@@ -1,66 +1,40 @@
-import numpy as np
 import numba
-
+import numpy as np
 
 @numba.njit
 def is_line_segment_intersection_jit(lines1, lines2):
-    """check if line segments1 and line segments2 have cross point
-    
-    Args:
-        lines1 (float, [N, 2, 2]): [description]
-        lines2 (float, [M, 2, 2]): [description]
-    
-    Returns:
-        [type]: [description]
-    """
-
-    # Return true if line segments AB and CD intersect
-    N = lines1.shape[0]
-    M = lines2.shape[0]
+    # If line segments AB and CD intersect, returns true
+    N, M = lines1.shape[0], lines2.shape[0]
     ret = np.zeros((N, M), dtype=np.bool_)
+
     for i in range(N):
         for j in range(M):
-            A = lines1[i, 0]
-            B = lines1[i, 1]
-            C = lines2[j, 0]
-            D = lines2[j, 1]
-            acd = (D[1] - A[1]) * (C[0] - A[0]) > (C[1] - A[1]) * (D[0] - A[0])
-            bcd = (D[1] - B[1]) * (C[0] - B[0]) > (C[1] - B[1]) * (D[0] - B[0])
+            A, B, C, D = lines1[i, 0], lines1[i, 1], lines2[j, 0], lines2[j, 1]
+            acd, bcd = (D[1] - A[1]) * (C[0] - A[0]) > (C[1] - A[1]) * (D[0] - A[0]), (D[1] - B[1]) * (C[0] - B[0]) > (C[1] - B[1]) * (D[0] - B[0])
             if acd != bcd:
-                abc = (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0])
-                abd = (D[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (D[0] - A[0])
-                if abc != abd:
-                    ret[i, j] = True
+                abc, abd = (C[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (C[0] - A[0]), (D[1] - A[1]) * (B[0] - A[0]) > (B[1] - A[1]) * (D[0] - A[0])
+                if abc != abd: ret[i, j] = True
+
     return ret
+
 
 @numba.njit
 def line_segment_intersection(line1, line2, intersection):
-    A = line1[0]
-    B = line1[1]
-    C = line2[0]
-    D = line2[1]
-    BA0 = B[0] - A[0]
-    BA1 = B[1] - A[1]
-    DA0 = D[0] - A[0]
-    CA0 = C[0] - A[0]
-    DA1 = D[1] - A[1]
-    CA1 = C[1] - A[1]
-    acd = DA1 * CA0 > CA1 * DA0
-    bcd = (D[1] - B[1]) * (C[0] - B[0]) > (C[1] - B[1]) * (D[0] - B[0])
+    A, B, C, D = line1[0], line1[1], line2[0], line2[1]
+    BA0, BA1 = B[0] - A[0], B[1] - A[1]
+    DA0, CA0 = D[0] - A[0], C[0] - A[0]
+    DA1, CA1 = D[1] - A[1], C[1] - A[1]
+    acd, bcd = DA1 * CA0 > CA1 * DA0, (D[1] - B[1]) * (C[0] - B[0]) > (C[1] - B[1]) * (D[0] - B[0])
     if acd != bcd:
-        abc = CA1 * BA0 > BA1 * CA0
-        abd = DA1 * BA0 > BA1 * DA0
+        abc, abd = CA1 * BA0 > BA1 * CA0, DA1 * BA0 > BA1 * DA0
         if abc != abd:
-            DC0 = D[0] - C[0]
-            DC1 = D[1] - C[1]
-            ABBA = A[0]*B[1] - B[0]*A[1]
-            CDDC = C[0]*D[1] - D[0]*C[1]
+            DC0, DC1 = D[0] - C[0], D[1] - C[1]
+            ABBA, CDDC = A[0]*B[1] - B[0]*A[1], C[0]*D[1] - D[0]*C[1]
             DH = BA1 * DC0 - BA0 * DC1
-            intersection[0] = (ABBA * DC0 - BA0 * CDDC) / DH
-            intersection[1] = (ABBA * DC1 - BA1 * CDDC) / DH
+            intersection[0], intersection[1] = (ABBA * DC0 - BA0 * CDDC) / DH, (ABBA * DC1 - BA1 * CDDC) / DH
             return True
-    return False
 
+    return False
 
 
 def _ccw(A, B, C):
