@@ -1,8 +1,7 @@
-import time
-
 import numpy as np
 import spconv
 import torch
+import time
 from torch import nn
 from torch.nn import functional as F
 
@@ -193,21 +192,16 @@ class SpMiddleFHD(nn.Module):
         self.max_batch_size = 6
         # self.grid = torch.full([self.max_batch_size, *sparse_shape], -1, dtype=torch.int32).cuda()
 
+    # Forward pass
     def forward(self, voxel_features, coors, batch_size):
-        # coors[:, 1] += 1
         coors = coors.int()
         ret = spconv.SparseConvTensor(voxel_features, coors, self.sparse_shape,
                                       batch_size)
-        # t = time.time()
-        # torch.cuda.synchronize()
         ret = self.middle_conv(ret)
-        # torch.cuda.synchronize()
-        # print("spconv forward time", time.time() - t)
         ret = ret.dense()
-
         N, C, D, H, W = ret.shape
-        ret = ret.view(N, C * D, H, W)
-        return ret
+        return ret.view(N, C * D, H, W)
+
 
 @register_middle
 class SpMiddleFHDPeople(nn.Module):
@@ -280,23 +274,16 @@ class SpMiddleFHDPeople(nn.Module):
             nn.ReLU(),
         )
         self.max_batch_size = 6
-        # self.grid = torch.full([self.max_batch_size, *sparse_shape], -1, dtype=torch.int32).cuda()
 
     def forward(self, voxel_features, coors, batch_size):
-        # coors[:, 1] += 1
         coors = coors.int()
         ret = spconv.SparseConvTensor(voxel_features, coors, self.sparse_shape,
                                       batch_size)
-        # t = time.time()
-        # torch.cuda.synchronize()
         ret = self.middle_conv(ret)
-        # torch.cuda.synchronize()
-        # print("spconv forward time", time.time() - t)
         ret = ret.dense()
 
         N, C, D, H, W = ret.shape
-        ret = ret.view(N, C * D, H, W)
-        return ret
+        return ret.view(N, C * D, H, W)
 
 @register_middle
 class SpMiddle2K(nn.Module):
@@ -473,14 +460,10 @@ class SpMiddleFHDLite(nn.Module):
         ret = spconv.SparseConvTensor(voxel_features, coors, self.sparse_shape,
                                       batch_size)
         ret = self.middle_conv(ret)
-
-        # ret.features = F.relu(ret.features)
-        # print(self.middle_conv.fused())
         ret = ret.dense()
 
         N, C, D, H, W = ret.shape
-        ret = ret.view(N, C * D, H, W)
-        return ret
+        return ret.view(N, C * D, H, W)
 
 @register_middle
 class SpMiddleFHDLiteHRZ(nn.Module):
@@ -512,11 +495,9 @@ class SpMiddleFHDLiteHRZ(nn.Module):
             ConvTranspose2d = change_default_args(bias=True)(
                 nn.ConvTranspose2d)
         sparse_shape = np.array(output_shape[1:4]) + [1, 0, 0]
-        # sparse_shape[0] = 11
         print(sparse_shape)
         self.sparse_shape = sparse_shape
         self.voxel_output_shape = output_shape
-        # input: # [1600, 1200, 41]
         self.middle_conv = spconv.SparseSequential(
             SpConv3d(num_input_features, 32, 3, 2,
                      padding=1),  # [1600, 1200, 81] -> [800, 600, 41]
@@ -548,8 +529,7 @@ class SpMiddleFHDLiteHRZ(nn.Module):
         ret = ret.dense()
 
         N, C, D, H, W = ret.shape
-        ret = ret.view(N, C * D, H, W)
-        return ret
+        return ret.view(N, C * D, H, W)
 
 @register_middle
 class SpMiddleFHDHRZ(nn.Module):
@@ -638,5 +618,4 @@ class SpMiddleFHDHRZ(nn.Module):
         ret = ret.dense()
 
         N, C, D, H, W = ret.shape
-        ret = ret.view(N, C * D, H, W)
-        return ret
+        return ret.view(N, C * D, H, W)
