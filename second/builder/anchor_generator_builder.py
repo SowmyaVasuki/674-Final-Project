@@ -5,6 +5,10 @@ from second.core.anchor_generator import (AnchorGeneratorStride,
                                           AnchorGeneratorRange)
 
 
+anchor_stride = 'anchor_generator_stride' # ag type generator stride
+anchor_range = 'anchor_generator_range' # ag type generator range
+no_anchor = 'no_anchor' # ag type no anchor
+
 def build(class_cfg):
     """Create optimizer based on config.
 
@@ -18,10 +22,10 @@ def build(class_cfg):
     ValueError: when using an unsupported input data type.
   """
     ag_type = class_cfg.WhichOneof('anchor_generator')
-
-    if ag_type == 'anchor_generator_stride':
-        config = class_cfg.anchor_generator_stride
-        ag = AnchorGeneratorStride(
+    ag = None
+    if ag_type == anchor_stride:
+      config = class_cfg.anchor_generator_stride
+      ag = AnchorGeneratorStride(
             sizes=list(config.sizes),
             anchor_strides=list(config.strides),
             anchor_offsets=list(config.offsets),
@@ -30,10 +34,10 @@ def build(class_cfg):
             unmatch_threshold=class_cfg.unmatched_threshold,
             class_name=class_cfg.class_name,
             custom_values=list(config.custom_values))
-        return ag
-    elif ag_type == 'anchor_generator_range':
-        config = class_cfg.anchor_generator_range
-        ag = AnchorGeneratorRange(
+
+    elif ag_type == anchor_range:
+      config = class_cfg.anchor_generator_range
+      ag = AnchorGeneratorRange(
             sizes=list(config.sizes),
             anchor_ranges=list(config.anchor_ranges),
             rotations=list(config.rotations),
@@ -41,8 +45,6 @@ def build(class_cfg):
             unmatch_threshold=class_cfg.unmatched_threshold,
             class_name=class_cfg.class_name,
             custom_values=list(config.custom_values))
-        return ag
-    elif ag_type == 'no_anchor':
-        return None
-    else:
-        raise ValueError(" unknown anchor generator type")
+    elif ag_type == no_anchor:
+      pass
+    return ag
