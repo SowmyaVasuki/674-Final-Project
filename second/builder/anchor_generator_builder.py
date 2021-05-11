@@ -6,16 +6,9 @@ from second.core.anchor_generator import (AnchorGeneratorStride,
 
 
 def build(class_cfg):
-    """Create optimizer based on config.
-
-  Args:
-    optimizer_config: A Optimizer proto message.
-
-  Returns:
-    An optimizer and a list of variables for summary.
-
-  Raises:
-    ValueError: when using an unsupported input data type.
+    """Create an optimizer according to the config
+  @args: optimizer_config
+  Returns: optimizer, list of variables for summary.
   """
     ag_type = class_cfg.WhichOneof('anchor_generator')
 
@@ -45,4 +38,4 @@ def build(class_cfg):
     elif ag_type == 'no_anchor':
         return None
     else:
-        raise ValueError(" unknown anchor generator type")
+        raise ValueError("anchor generator unknown")
