@@ -1,6 +1,65 @@
 ## 674-Final-Project
 
-We distributed the tasks and implemented the SECOND Network as follows:
+### 1. Install dependence python packages
+
+It is recommend to use Anaconda package manager.
+
+```bash
+conda install scikit-image scipy numba pillow matplotlib
+```
+
+```bash
+pip install fire tensorboardX protobuf opencv-python
+```
+
+If you don't have Anaconda:
+
+```bash
+pip install numba scikit-image scipy pillow
+```
+
+Follow instructions in [spconv](https://github.com/traveller59/spconv) to install spconv. 
+
+## Prepare dataset
+
+* KITTI Dataset preparation
+
+Download KITTI dataset and create some directories first:
+
+```plain
+└── KITTI_DATASET_ROOT
+       ├── training    <-- 7481 train data
+       |   ├── image_2 <-- for visualization
+       |   ├── calib
+       |   ├── label_2
+       |   ├── velodyne
+       |   └── velodyne_reduced <-- empty directory
+       └── testing     <-- 7580 test data
+           ├── image_2 <-- for visualization
+           ├── calib
+           ├── velodyne
+           └── velodyne_reduced <-- empty directory
+```
+
+Then run
+```bash
+python create_data.py kitti_data_prep --data_path=KITTI_DATASET_ROOT
+```
+
+## Usage
+
+### train
+
+I recommend to use script.py to train and eval. see script.py for more details.
+
+#### train with single GPU
+
+```bash
+python ./pytorch/train.py train --config_path=./configs/car.fhd.config --model_dir=/path/to/model_dir
+```
+
+
+### 2. We distributed the tasks and implemented the SECOND Network as follows:
 
 ### Pranjali Ajay Parse:
 - 8-26 - builder/anchor_generator_builder.py
